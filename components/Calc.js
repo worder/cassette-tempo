@@ -1,82 +1,89 @@
-import React, { useEffect, useState } from 'react'
-
-import styled from 'styled-components'
+import React, { useEffect, useState } from 'react';
+import styled from 'styled-components';
+import {
+    timeToSec,
+    leadingPlus as lp,
+    leadingZero as lz,
+    roundTwoDigitsPrecision as round2,
+} from '../util/calc';
 
 const SmallInput = styled.input`
-    width: 100px;
-`
-
+    background-color: ${p => p.theme.inputBg};
+    color: ${p => p.theme.inputColor};
+    border: 0px;
+    border-radius: 5px;
+    padding: 3px;
+    font-size: 40pt;
+    width: 100%;
+`;
 const TapePresetButton = styled.button`
     border: none;
-`
-
+`;
 const Desc = styled.div`
+    font-size: 20pt;
+`;
+const DescBlock = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+`;
+const Units = styled.div``;
+const Main = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+`;
+const CalcContainer = styled.div`
+    width: 800px;
     display: block;
-`
-
-const Main = styled.div``
-
-const parseTime = (value) => {
-    const num = (value) => Number(value, 10)
-    let res = /^(\d+):([0-59]+):?([0-59]+)?$/.exec(value)
-    if (res) {
-        let [hour, min, sec] = [0, 0, 0]
-        if ('undefined' === typeof res[3]) {
-            ;[, min, sec] = res
-        } else {
-            ;[, hour, min, sec] = res
-        }
-
-        return num(hour) * 60 * 60 + num(min) * 60 + num(sec)
-    }
-
-    res = /^(\d+)$/.exec(value)
-    if (res) {
-        return num(value) * 60
-    }
-
-    return false;
-}
-
-const round2dec = val => Math.round(val * 100) / 100
-const lz = num => (num >= 0 && num < 10 ? `0${num}` : `${num}`)
-const lp = num => num > 0 ? `+${num}` : num;
+`;
+const InputBlock = styled.div`
+    margin-bottom: 20px;
+    margin: 0px 10px 20px;
+`;
+const ResultBlock = styled.div`
+    margin-top: 10px;
+`;
+const PresetsBlock = styled.div`
+    margin-bottom: 20px;
+`;
+const LengthsBlock = styled.div`
+    margin: 0px -10px;
+    display: flex;
+`;
 
 const Calc = () => {
-    const [tapeLengthValue, setTapeLengthValue] = useState('')
-    const [tapeLengthSec, setTapeLengthSec] = useState(0)
+    const [tapeLengthValue, setTapeLengthValue] = useState('00:00');
+    const [tapeLengthSec, setTapeLengthSec] = useState(0);
 
-    const [contentLengthValue, setContentLengthValue] = useState('');
+    const [contentLengthValue, setContentLengthValue] = useState('00:00');
     const [contentLengthSec, setContentLengthSec] = useState(0);
 
     useEffect(() => {
-        const parsed = parseTime(tapeLengthValue);
+        const parsed = timeToSec(tapeLengthValue);
         if (parsed !== false) {
             setTapeLengthSec(parsed);
         }
-    }, [tapeLengthValue])
+    }, [tapeLengthValue]);
 
     useEffect(() => {
-        const parsed = parseTime(contentLengthValue);
+        const parsed = timeToSec(contentLengthValue);
         if (parsed !== false) {
             setContentLengthSec(parsed);
         }
     }, [contentLengthValue]);
 
-
-
     const lengthFormat = (lengthSec, trailingSign = false) => {
-        const min = Math.floor(Math.abs(lengthSec) / 60)
-        const sec = Math.abs(lengthSec) % 60
-        let val = sec != 0 ? `${lz(min)}:${lz(sec)}` : `${lz(min)} min`
+        const min = Math.floor(Math.abs(lengthSec) / 60);
+        const sec = Math.abs(lengthSec) % 60;
+        let val = sec !== 0 ? `${lz(min)}:${lz(sec)}` : `${lz(min)} min`;
         if (trailingSign) {
-            val = `${lengthSec > 0 ? '+' : '-'}${val}`
+            val = `${lengthSec > 0 ? '+' : '-'}${val}`;
         }
         return val;
-    }
+    };
 
-    const preset = (val) => () => setTapeLengthValue(val)
-
+    const preset = val => () => setTapeLengthValue(val);
     const deviationSec = tapeLengthSec - contentLengthSec;
 
     // <0 - content need to be speed up
@@ -85,48 +92,69 @@ const Calc = () => {
     const ratio = contentLengthSec / tapeLengthSec;
     const percent = (ratio - 1) * 100;
 
-
     return (
         <Main>
-            <div>
-                <Desc>Preset:</Desc>
-                <TapePresetButton onClick={preset(46 / 2)}>C46</TapePresetButton>
-                <TapePresetButton onClick={preset(60 / 2)}>C60</TapePresetButton>
-                <TapePresetButton onClick={preset(90 / 2)}>C90</TapePresetButton>
-                <TapePresetButton onClick={preset(120 / 2)}>C120</TapePresetButton>
-            </div>
-            <Desc>Tape length one side (minutes or ":" separated)</Desc>
-            <SmallInput
-                type="text"
-                onChange={(e) => setTapeLengthValue(e.target.value)}
-                value={tapeLengthValue}
-            />
-            <div>
-                Tape length calculated:{' '}
-                <b>
-                    {lengthFormat(tapeLengthSec)} ({tapeLengthSec} sec)
-                </b>
-            </div>
+            <CalcContainer>
+                <PresetsBlock>
+                    <Desc>Preset:</Desc>
+                    <TapePresetButton onClick={preset(46 / 2)}>C46</TapePresetButton>
+                    <TapePresetButton onClick={preset(60 / 2)}>C60</TapePresetButton>
+                    <TapePresetButton onClick={preset(90 / 2)}>C90</TapePresetButton>
+                    <TapePresetButton onClick={preset(120 / 2)}>C120</TapePresetButton>
+                </PresetsBlock>
 
-            <Desc>Content length:</Desc>
-            <SmallInput
-                type="text"
-                onChange={(e) => setContentLengthValue(e.target.value)}
-                value={contentLengthValue}
-            />
-            <div>
-                Content length calculated:{' '}
-                <b>
-                    {lengthFormat(contentLengthSec)} ({contentLengthSec} sec)
-                </b>
-            </div>
+                <LengthsBlock>
+                    <InputBlock>
+                        <DescBlock>
+                            <Desc>Tape</Desc>
+                            <Units>minutes</Units>
+                        </DescBlock>
+                        <SmallInput
+                            type="text"
+                            onChange={e => setTapeLengthValue(e.target.value)}
+                            value={tapeLengthValue}
+                        />
+                        <ResultBlock>
+                            <div>
+                                Tape length calculated:{' '}
+                                <b>
+                                    {lengthFormat(tapeLengthSec)} ({tapeLengthSec} sec)
+                                </b>
+                            </div>
+                        </ResultBlock>
+                    </InputBlock>
 
-            <div>deviation {lengthFormat(deviationSec, true)} ({deviationSec} sec)</div>
-            {/* <div>ratio {round2dec(ratio)}</div> */}
-            <div>speed adjust {lp(round2dec(percent))}%</div>
+                    <InputBlock>
+                        <DescBlock>
+                            <Desc>Content</Desc>
+                            <Units>minutes</Units>
+                        </DescBlock>
+                        <SmallInput
+                            type="text"
+                            onChange={e => setContentLengthValue(e.target.value)}
+                            value={contentLengthValue}
+                        />
+                        <ResultBlock>
+                            <div>
+                                Content length calculated:{' '}
+                                <b>
+                                    {lengthFormat(contentLengthSec)} ({contentLengthSec} sec)
+                                </b>
+                            </div>
+                        </ResultBlock>
+                    </InputBlock>
+                </LengthsBlock>
 
+                <ResultBlock>
+                    <div>
+                        deviation {lengthFormat(deviationSec, true)} ({deviationSec} sec)
+                    </div>
+                    {/* <div>ratio {round2dec(ratio)}</div> */}
+                    <div>speed adjust {lp(round2(percent))}%</div>
+                </ResultBlock>
+            </CalcContainer>
         </Main>
-    )
-}
+    );
+};
 
-export default Calc
+export default Calc;
